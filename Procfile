@@ -1,1 +1,1 @@
-web: bundle exec ruby sms-quickstart.rb -p 8080
+web: bundle exec ruby sms-quickstart.rb -p $PORT
