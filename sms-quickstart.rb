@@ -17,7 +17,7 @@ end
 get '/sms-quickstart' do
 	
 	session[:step] = 0 if params['Body'] == "Clear"
-	session[:name] = 0 if params['Body'] == 'Clear'
+	session[:name] = nil if params['Body'] == 'Clear'
 
 	session[:step] ||= 0 
 	session[:step] += 1
