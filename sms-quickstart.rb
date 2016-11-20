@@ -17,12 +17,18 @@ end
 get '/sms-quickstart' do
 	
 	session[:step] = 0 if params['Body'] == "Clear"
+	session[:name] = 0 if params['Body'] == "Clear"
 
 	session[:step] ||= 0 
 	session[:step] += 1
 
   twiml = Twilio::TwiML::Response.new do |r|
-    if (params['Body'] == 'another') || (params['Body'] == 'Another')
+    if params['Body'].downcase == 'send cats'
+    	r.Message do |message|
+    		message.Media get_url
+    		message.Body "Thanks for texting in to CatPics! You can always reply with \'another\' to get more! Or, tell me how the cat looked!"
+    	end
+    elsif (params['Body'] == 'another') || (params['Body'] == 'Another')
     	session[:step] = 0
     	
     	r.Message do |message|
