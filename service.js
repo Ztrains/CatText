@@ -1,24 +1,47 @@
+// libraries
 const dotenv = require('dotenv').config();
 const express = require('express');
-const axios = require('axios').default;
+const readline = require("readline");
+const http = require('http');
+const { count } = require('console');
 
+// server config
 const app = express();
 const port = process.env.PORT || 3000
+const reader = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
+// twilio config
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const client = require('twilio')(accountSid, authToken);
 
+// middleware
+app.use(express.urlencoded({ extended: true }));
+
+// sends MMS of random cat image
 app.get('/cat', (req, res) => {
+    let statusURL = '';
+    if(process.env.NGROK_URL) {
+        console.log(`setting statusURL to ${process.env.NGROK_URL}`)
+        statusURL = process.env.NGROK_URL;
+    }
+
     client.messages.create({
-       body: 'Enjoy your kitty!',
+       body: 'Enjoy your cat!',
        from: process.env.FROM_NUMBER,
+       to: process.env.TO_NUMBER,
        mediaUrl: ['https://api.thecatapi.com/v1/images/search?format=src&limit=1'],
-       to: process.env.TO_NUMBER
+       statusCallback: statusURL
     })
     .then(message => {
-        console.log(`message status is ${message.status}`)
-        res.send(message.status)
+        const messageSid = message.sid;
+        const messageStatus = message.status;
+
+        console.log(`${messageSid} status: ${messageStatus}`)
+        res.send('sending mms, check console for status')
     })
     .catch(err => {
         console.log(`err: ${err}`)
@@ -26,11 +49,45 @@ app.get('/cat', (req, res) => {
     })
 })
 
+// status callback of /cat
+app.post('/status', (req, res) => {
+    const messageSid = req.body.MessageSid;
+    const messageStatus = req.body.MessageStatus;
+
+    console.log(`${messageSid} status: ${messageStatus}`);
+
+    res.sendStatus(200);
+});
+
+// serves random cat image
 app.get('/test', (req, res) => {
     res.send(`<img src="https://api.thecatapi.com/v1/images/search?format=src&limit=1" />`)
 })
 
+// start server
 app.listen(port, () => {
-    console.log(`Example app listening at http://localhost:${port}`)
-})
+    console.log(`service listening at http://localhost:${port}`)
 
+    reader.on('line', (input) => {
+        if (input === 'yes' || input === 'y') {
+            http.get(`http://localhost:${port}/cat`)
+        } else console.log(`did not understand ${input}, try 'yes' or 'y'`)
+    })
+
+    reader.on('close', () => {
+        clearInterval(countdown)
+    })
+
+    let timeout = 9;
+    let countdown = setInterval(() => {
+        process.stdout.write(`  send text to ${process.env.TO_NUMBER}? ${timeout}\r`);
+
+        if (timeout-- === 0) {
+            reader.close();
+        }
+
+    }, 1000);
+
+    
+    
+})
