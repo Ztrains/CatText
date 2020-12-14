@@ -1,0 +1,11 @@
+# logs
+*.log
+npm-debug.log*
+
+# dependency directories
+node_modules/
+
+# secrets
+.env
+
+# vscode options
