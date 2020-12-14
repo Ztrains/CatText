@@ -3,7 +3,6 @@ const dotenv = require('dotenv').config();
 const express = require('express');
 const readline = require("readline");
 const http = require('http');
-const e = require('express');
 
 // server config
 const app = express();
