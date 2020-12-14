@@ -3,11 +3,11 @@ const dotenv = require('dotenv').config();
 const express = require('express');
 const readline = require("readline");
 const http = require('http');
-const { count } = require('console');
+const e = require('express');
 
 // server config
 const app = express();
-const port = process.env.PORT || 3000
+const port = process.env.PORT || 3000;
 const reader = readline.createInterface({
     input: process.stdin,
     output: process.stdout
@@ -25,7 +25,7 @@ app.use(express.urlencoded({ extended: true }));
 app.get('/cat', (req, res) => {
     let statusURL = '';
     if(process.env.NGROK_URL) {
-        console.log(`setting statusURL to ${process.env.NGROK_URL}`)
+        console.log(`setting statusURL to ${process.env.NGROK_URL}`);
         statusURL = process.env.NGROK_URL;
     }
 
@@ -46,8 +46,8 @@ app.get('/cat', (req, res) => {
     .catch(err => {
         console.log(`err: ${err}`)
         res.send(err)
-    })
-})
+    });
+});
 
 // status callback of /cat
 app.post('/status', (req, res) => {
@@ -61,33 +61,38 @@ app.post('/status', (req, res) => {
 
 // serves random cat image
 app.get('/test', (req, res) => {
-    res.send(`<img src="https://api.thecatapi.com/v1/images/search?format=src&limit=1" />`)
+    res.send(`<img src="https://api.thecatapi.com/v1/images/search?format=src&limit=1" />`);
 })
 
 // start server
 app.listen(port, () => {
-    console.log(`service listening at http://localhost:${port}`)
+    let msg = '';
+    let timeout = 10;
+    let arg = process.argv[2];
 
-    reader.on('line', (input) => {
-        if (input === 'yes' || input === 'y') {
-            http.get(`http://localhost:${port}/cat`)
-        } else console.log(`did not understand ${input}, try 'yes' or 'y'`)
-    })
+    console.log(`service listening at http://localhost:${port}`);
 
-    reader.on('close', () => {
-        clearInterval(countdown)
-    })
+    // for running 'node service.js send'
+    if (arg === 'send') http.get(`http://localhost:${port}/cat`);
 
-    let timeout = 9;
-    let countdown = setInterval(() => {
-        process.stdout.write(`  send text to ${process.env.TO_NUMBER}? ${timeout}\r`);
-
-        if (timeout-- === 0) {
+    else {
+        reader.on('line', input => {
+            if (input === 'yes' || input === 'y') {
+                reader.close();
+                http.get(`http://localhost:${port}/cat`);
+            } else console.log(`did not understand ${input}, try 'yes' or 'y'`);
+        })
+    
+        reader.on('close', () => {
+            if (msg === 'timeout') console.log('prompt expired');
+            clearTimeout(countdown);
+        })
+    
+        console.log(`send image to ${process.env.TO_NUMBER}?`);
+        let countdown = setTimeout(() => {
+            msg = 'timeout';
             reader.close();
-        }
+        }, timeout * 1000);
+    }
 
-    }, 1000);
-
-    
-    
 })
